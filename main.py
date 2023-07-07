@@ -3,9 +3,9 @@ import sys
 from time import sleep
 from pygame import *
 from random import randint
-win = display.set_mode((700, 500)) 
-display.set_caption('Налётчики') 
-background = transform.scale(image.load('back.png'), (700, 700)) #загрузка изображения для заднего фона
+win = display.set_mode((1000, 700)) 
+display.set_caption('Dungeon labyrinth') 
+background = transform.scale(image.load('back.png'), (1000, 700)) #загрузка изображения для заднего фона
 win.blit(background, (0, 0))
 clock = time.Clock()
 font.init()
@@ -33,7 +33,7 @@ class Player(Gamesprite):
         self.endurable = 0
         self.j = False
         self.dmtaken = False
-        self.hp = 5
+        self.hp = 99
         self.blink = False
         self.spring_init = False
         self.spring_timer = 0
@@ -44,6 +44,7 @@ class Player(Gamesprite):
         self.dash_active = False
         self.dash_timer = 0
         self.dash_speed = 12
+
 
     def gravity(self, win):
         if not sprite.groupcollide(self.group, platform_up, False, False) and self.t == 0 and not self.dash_active:
@@ -83,10 +84,10 @@ class Player(Gamesprite):
 
 
     def move(self):
-        if keys[K_LEFT] and self.rect.x > 0\
+        if keys[K_LEFT]\
          and not sprite.groupcollide(self.group, platform_right, False, False):
             self.rect.x -= 3
-        if keys[K_RIGHT] and self.rect.x < 670\
+        if keys[K_RIGHT]\
          and not sprite.groupcollide(self.group, platform_left, False, False):
             self.rect.x += 3
 
@@ -125,6 +126,7 @@ class Player(Gamesprite):
             if self.dash_active:
                 self.spring_init = False
                 self.spring_timer = 0 
+
     def dash_left(self):
         if keys[K_n] and self.dash_able:
             self.dash_bool_left = True
@@ -137,8 +139,8 @@ class Player(Gamesprite):
             self.dash_active = False
             self.dash_timer = 0
             self.dash_bool_left = False
-        if sprite.groupcollide(self.group, platform_right, False, False):
-            self.rect.x += 8
+        if sprite.groupcollide(self.group, platform_right, False, False) and self.dash_active:
+            self.rect.x += 10
             self.dash_active = False
             self.dash_timer = 0
             self.dash_bool_left = False
@@ -156,7 +158,7 @@ class Player(Gamesprite):
             self.dash_timer = 0
             self.dash_bool_right = False
         if sprite.groupcollide(self.group, platform_left, False, False) and self.dash_active:
-            self.rect.x -= 8
+            self.rect.x -= 10
             self.dash_active = False
             self.dash_timer = 0
             self.dash_bool_right = False
@@ -175,6 +177,14 @@ class Spring(Gamesprite):
         self.group = sprite.Group()
         self.group.add(self)
 
+class Door(Gamesprite):
+    def __init__(self, pic, x, y, w, h):
+        super().__init__(pic, x, y, w, h)
+        self.group = sprite.Group()
+        self.group.add(self)
+
+    def exist(self, win):
+        win.blit(self.image, (self.rect.x, self.rect.y))
 
 class Platform(Gamesprite):
     def __init__(self, pic, x, y, w, h):
@@ -184,25 +194,14 @@ class Platform(Gamesprite):
     def exist(self, win):
         win.blit(self.image, (self.rect.x, self.rect.y))
 
-room1left = sprite.Group()
-room1right = sprite.Group()
-room1up = sprite.Group()
-room1down = sprite.Group()
-room1spring = sprite.Group()
-room1enemies = sprite.Group()
+class Teleport(Gamesprite):
+    def __init__(self, pic, x, y, w, h):
+        super().__init__(pic, x, y, w, h)
+        self.group = sprite.Group()
+        self.group.add(self)
 
-r1spring1 = Spring('spring.png', 500, 485, 30, 5)
-room1spring.add(r1spring1)
-
-r1enemy1 = Enemy('attack.png', 20, 450, 30, 40)
-room1enemies.add(r1enemy1)
-
-
-
-
-
-
-
+    def exist(self, win):
+        win.blit(self.image, (self.rect.x, self.rect.y))
 
 
 def create_room1(pic, x, y, w, h):
@@ -220,11 +219,75 @@ def create_room1(pic, x, y, w, h):
     platform_down = Platform(pic, x+3, y1, w-3, int(h/2))
     room1down.add(platform_down)
 
-create_room1('square.png', 0, 490, 700, 10)
-create_room1('square.png', 300, 300, 100, 150)
-create_room1('square.png', 530, 100, 300, 150)
-create_room1('square.png', 530, 340, 300, 150)
-player = Player('blu.png', 'blink.png', 100, 350, 30, 30)
+def create_room2(pic, x, y, w, h):
+    platform_left = Platform(pic, x, y+3, int(w/2), h-3)
+    room2left.add(platform_left)
+    platform_up = Platform(pic, x+3, y, w-3, int(h/2))
+    room2up.add(platform_up)
+    w1 = int(w/2)
+    x1 = w1-3
+    y1 = y - w1
+    platform_right = Platform(pic, x+x1, y+3, w1 + 6, h-3)
+    room2right.add(platform_right)
+    h1 = h/2
+    y1 = int(y+h1)
+    platform_down = Platform(pic, x+3, y1, w-3, int(h/2))
+    room2down.add(platform_down)
+
+
+room1left = sprite.Group()
+room1right = sprite.Group()
+room1up = sprite.Group()
+room1down = sprite.Group()
+room1spring = sprite.Group()
+room1enemies = sprite.Group()
+
+
+r1teleport1 = Teleport('teleport.png', 100, 695, 800, 100)
+
+
+r1spring1 = Spring('spring.png', 153, 270, 227, 5)
+room1spring.add(r1spring1)
+
+r1enemy1 = Enemy('attack.png', 153, 250, 227, 20)
+r1enemy2 = Enemy('attack.png', 690, 135, 30, 5)
+r1enemy3 = Enemy('attack.png', 790, 135, 30, 5)
+r1enemy4 = Enemy('attack.png', 890, 135, 30, 5)
+r1enemy5 = Enemy('attack.png', 100, 670, 800, 100)
+room1enemies.add(r1enemy1)
+room1enemies.add(r1enemy2)
+room1enemies.add(r1enemy3)
+room1enemies.add(r1enemy4)
+room1enemies.add(r1enemy5)
+
+r1door_to_room2 = Door('Door.png', 7000, 250, 50, 90)
+
+
+create_room1('square.png', -24, 0, 20, 700)
+create_room1('square.png', 1000, 0, 20, 700)
+create_room1('square.png', 0, -20, 1000, 20)
+create_room1('square.png', 0, 100, 150, 200)
+create_room1('square.png', 380, -100, 300, 150)
+create_room1('square.png', 380, 140, 300, 150)
+create_room1('square.png', 680, 0, 500, 105)
+create_room1('square.png', 670, 140, 250, 150)
+create_room1('square.png', 900, 650, 400, 50)
+#250 - 700, 100 - 900
+create_room1('square.png', 750, 600, 15, 10)
+create_room1('square.png', 600, 500, 30, 10)
+create_room1('square.png', 610, 505, 10, 500)
+create_room1('square.png', 500, 650, 15, 10)
+create_room1('square.png', 550, 250, 10, 350)
+
+
+
+room2left = sprite.Group()
+room2right = sprite.Group()
+room2up = sprite.Group()
+room2down = sprite.Group()
+
+create_room2('square.png', 0, 500, 1000, 10)
+player = Player('blu.png', 'blink.png', 10, 10, 20, 20)
 
 
 player_health = text.render("HP " + str(player.hp), True, (255, 255, 255))
@@ -233,6 +296,7 @@ death = text_big.render('Вы погибли', True, (255, 50, 50))
 # group.add(rocket)
 # enemy_group = sprite.Group()
 # enemy_group.add(Enemy('ufo.png'))
+room2active = False
 room1active = True
 loop = True
 while loop:
@@ -259,6 +323,8 @@ while loop:
         platform_down.draw(win)
         active_room_spring.draw(win)
         enemies.draw(win)
+        r1door_to_room2.exist(win)
+        r1teleport1.exist(win)
         player.gravity(win)
         player.move()
         player.jump_init()
@@ -267,6 +333,30 @@ while loop:
         player.blinking()
         player.dash_left()
         player.dash_right()
+        if sprite.groupcollide(player.group, r1door_to_room2.group, False, False):
+            room1active = False
+            room2active = True
+        if sprite.groupcollide(player.group, r1teleport1.group, False, False):
+            player.rect.x = 950
+            player.rect.y = 600
+    if room2active:
+        platform_left = room2left
+        platform_right = room2right
+        platform_up = room2up
+        platform_down = room2down
+        platform_left.draw(win)
+        platform_right.draw(win)
+        platform_up.draw(win)
+        platform_down.draw(win)
+        player.gravity(win)
+        player.move()
+        player.jump_init()
+        player.jump()
+        player.touch_spring()
+        player.blinking()
+        player.dash_left()
+        player.dash_right()
+
     player_health = text.render("HP " + str(player.hp), True, (255, 255, 255))
     if player.hp == 0:
         win.blit(death, (280, 250))
